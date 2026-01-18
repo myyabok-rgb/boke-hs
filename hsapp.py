@@ -20,24 +20,12 @@ from googleapiclient.http import MediaIoBaseDownload
 MY_GEMINI_KEY = "AIzaSyASNbmrtVz6eOoqb7mo73TsUUPEk46FeM4"
 
 # ==========================================
-# 1. 界面样式 (隐藏猫头 + 强制对齐)
+# 1. 界面样式 (强制对齐)
 # ==========================================
 st.set_page_config(page_title="博克智能·全库算力终端", page_icon="🏭", layout="wide")
 
 st.markdown("""
 <style>
-/* 🔥🔥🔥 核心修改：彻底隐藏顶部工具栏 (猫头、菜单、红线) 🔥🔥🔥 */
-header {visibility: hidden !important;}
-[data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
-[data-testid="stHeader"] {visibility: hidden !important; display: none !important;}
-footer {visibility: hidden !important; display: none !important;}
-.stDeployButton {display: none !important;}
-
-/* 上移内容，填补顶部留白 */
-.block-container {
-    padding-top: 1rem !important;
-}
-
 /* 按钮高度强制与输入框对齐 */
 div.stButton > button {
     height: 43px; /* 标准输入框高度 */
@@ -46,22 +34,10 @@ div.stButton > button {
     padding-bottom: 0px;
     width: 100%;
 }
-
 /* 调整列间距，让加号和发送键紧贴输入框 */
 [data-testid="column"] {
     padding-left: 5px !important;
     padding-right: 5px !important;
-}
-
-/* 聊天气泡 */
-.chat-bubble {
-    background-color: #f0f7ff;
-    border: 1px solid #cce5ff;
-    border-radius: 8px;
-    padding: 10px;
-    margin-top: 5px;
-    font-size: 14px;
-    color: #004085;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -148,14 +124,13 @@ def ask_ai_market_with_context(query, service):
     return text if text else f"⚠️ {info}"
 
 def ask_ai_chemist(medium, vol):
-    # 安全的写法，防止报错
-    json_format = '{"viscosity": "xx", "type": "xx", "power": 0, "reason": "xx"}'
-    prompt = (
-        f"作为化工设备专家，请根据介质【{medium}】和容积【{vol}立方】："
-        "1. 估算介质常温粘度。2. 推荐搅拌器形式。3. 估算电机功率(kW)。"
-        f"请仅返回JSON格式: {json_format}"
-    )
-    
+    prompt = f"""
+    作为化工设备专家，请根据介质【{medium}】和容积【{vol}立方】：
+    1. 估算介质常温粘度。
+    2. 推荐搅拌器形式。
+    3. 估算电机功率(kW)。
+    请仅返回JSON: {{"viscosity": "xx", "type": "xx", "power": 数值, "reason": "xx"}}
+    """
     ai_text, info = call_gemini_direct_v30(prompt)
     fallback = {"viscosity": "网络中断", "type": "通用桨式", "power": 5.5, "reason": "无法连接AI"}
     if not ai_text: return fallback
@@ -174,9 +149,9 @@ else:
 
 st.sidebar.markdown("---")
 
-# 🔥 代理修复通道
+# 🔥【新功能】代理修复通道
 with st.sidebar.expander("🛠️ 网络修复 (连不上点这里)", expanded=False):
-    st.caption("若快连无效，请填入HTTP端口(如 10809):")
+    st.caption("如果您开了快连还是报错，请查看快连设置里的'HTTP端口'，填入下方：")
     user_proxy_port = st.text_input("代理端口", placeholder="例如 10809")
     if user_proxy_port:
         setup_proxy(user_proxy_port)
@@ -261,7 +236,7 @@ def run_calculation_v30(vol, mat, press, medium, polish, heat_type, qty, prices)
     return df_bom, total, delta, ai_res
 
 # ==========================================
-# 6. 主界面 (隐身模式 + 对齐)
+# 6. 主界面 (按图纸严丝合缝)
 # ==========================================
 st.title("🏭 博克智能 · 全库算力终端")
 st.markdown("---")
@@ -303,7 +278,7 @@ with col1:
         with st.spinner("Connecting..."):
             ans = ask_ai_market_with_context(chat_input_val, service)
             if uploaded_file: st.caption(f"已传: {uploaded_file.name}")
-            st.markdown(f'<div class="chat-bubble">🤖 {ans}</div>', unsafe_allow_html=True)
+            st.info(f"🤖 {ans}")
 
     # 开始计算按钮 (左侧最底)
     st.markdown("<br>", unsafe_allow_html=True)
